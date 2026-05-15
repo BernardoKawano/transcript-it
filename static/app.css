@@ -112,13 +112,22 @@ body {
 }
 
 .upload-zone {
+  display: block;
+  width: 100%;
   border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius);
   padding: 2.25rem 1.5rem;
-  text-align: center;
   background: var(--bg);
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
+}
+
+.upload-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
 }
 
 .upload-zone:hover,
@@ -132,9 +141,11 @@ body {
 }
 
 .upload-icon {
+  display: block;
   width: 44px;
   height: 44px;
-  margin: 0 auto 0.875rem;
+  margin-bottom: 0.875rem;
+  flex-shrink: 0;
   color: var(--muted);
 }
 
@@ -168,7 +179,8 @@ body {
 }
 
 .file-name.visible {
-  display: inline-block;
+  display: block;
+  max-width: 100%;
 }
 
 .actions {

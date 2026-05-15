@@ -30,14 +30,16 @@
 
         <label class="upload-zone" id="dropZone">
           <input type="file" id="fileInput" accept="video/*,audio/*,.mp4,.mkv,.avi,.mov,.webm,.mp3,.wav,.m4a,.ogg,.flac" />
-          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          <p>Clique ou arraste o arquivo aqui</p>
-          <p class="upload-hint">MP4, MKV, MOV, MP3, WAV e outros formatos comuns</p>
-          <span class="file-name" id="fileName"></span>
+          <div class="upload-inner">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p>Clique ou arraste o arquivo aqui</p>
+            <p class="upload-hint">MP4, MKV, MOV, MP3, WAV e outros formatos comuns</p>
+            <span class="file-name" id="fileName"></span>
+          </div>
         </label>
 
         <div class="actions">
