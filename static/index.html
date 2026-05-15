@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Transcreva vídeos e áudios em texto com timestamps." />
+  <title>Transcrição de Vídeo</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232563eb'/%3E%3Cpath fill='%23fff' d='M10 11h12v2H10zm0 4h12v2H10zm0 4h8v2h-8z'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v18M8 7v10M16 5v14M4 9v6M20 8v8"/>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1>Transcrição de Vídeo</h1>
+          <p>Converta áudio e vídeo em texto</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="card" aria-labelledby="upload-title">
+        <h2 class="card-title" id="upload-title">1. Enviar arquivo</h2>
+
+        <label class="upload-zone" id="dropZone">
+          <input type="file" id="fileInput" accept="video/*,audio/*,.mp4,.mkv,.avi,.mov,.webm,.mp3,.wav,.m4a,.ogg,.flac" />
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p>Clique ou arraste o arquivo aqui</p>
+          <p class="upload-hint">MP4, MKV, MOV, MP3, WAV e outros formatos comuns</p>
+          <span class="file-name" id="fileName"></span>
+        </label>
+
+        <div class="actions">
+          <button type="button" class="btn-primary" id="btnTranscribe" disabled>Transcrever</button>
+          <button type="button" class="btn-secondary" id="btnClear">Limpar</button>
+        </div>
+      </section>
+
+      <div id="statusBar" class="status-bar hidden" role="status" aria-live="polite"></div>
+
+      <section class="card results" id="results" aria-labelledby="results-title">
+        <h2 class="card-title" id="results-title">2. Resultado</h2>
+
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" role="tab" id="tab-pure" aria-selected="true" aria-controls="panel-pure" data-tab="pure">Texto puro</button>
+          <button type="button" class="tab" role="tab" id="tab-timed" aria-selected="false" aria-controls="panel-timed" data-tab="timed">Com timestamps</button>
+        </div>
+
+        <div class="result-panel active" id="panel-pure" role="tabpanel" aria-labelledby="tab-pure">
+          <div class="result-toolbar">
+            <span class="copied" id="copiedPure">Copiado</span>
+            <button type="button" class="btn-secondary btn-copy" data-copy="pureText">Copiar</button>
+          </div>
+          <textarea id="pureText" readonly placeholder="A transcrição aparecerá aqui…"></textarea>
+        </div>
+
+        <div class="result-panel" id="panel-timed" role="tabpanel" aria-labelledby="tab-timed" hidden>
+          <div class="result-toolbar">
+            <span class="copied" id="copiedTimed">Copiado</span>
+            <button type="button" class="btn-secondary btn-copy" data-copy="timedText">Copiar</button>
+          </div>
+          <textarea id="timedText" readonly placeholder="[00:00.000 → 00:05.200] Frase…"></textarea>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      Uso interno · Os arquivos são processados e não ficam armazenados no servidor
+    </footer>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const dropZone = document.getElementById("dropZone");
+    const fileName = document.getElementById("fileName");
+    const btnTranscribe = document.getElementById("btnTranscribe");
+    const btnClear = document.getElementById("btnClear");
+    const statusBar = document.getElementById("statusBar");
+    const results = document.getElementById("results");
+    const pureText = document.getElementById("pureText");
+    const timedText = document.getElementById("timedText");
+
+    let selectedFile = null;
+
+    function setStatus(msg, type = "") {
+      if (!msg) {
+        statusBar.textContent = "";
+        statusBar.className = "status-bar hidden";
+        return;
+      }
+      statusBar.className = "status-bar " + type;
+      if (type === "loading") {
+        statusBar.innerHTML = '<span class="spinner" aria-hidden="true"></span><span>' + msg + "</span>";
+      } else {
+        statusBar.textContent = msg;
+      }
+    }
+
+    function onFile(file) {
+      if (!file) return;
+      selectedFile = file;
+      fileName.textContent = file.name;
+      fileName.classList.add("visible");
+      btnTranscribe.disabled = false;
+      setStatus("Arquivo selecionado. Clique em Transcrever para iniciar.", "");
+    }
+
+    fileInput.addEventListener("change", (e) => onFile(e.target.files[0]));
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file) onFile(file);
+    });
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll(".tab").forEach((t) => {
+          const active = t.dataset.tab === target;
+          t.classList.toggle("active", active);
+          t.setAttribute("aria-selected", active);
+        });
+        document.querySelectorAll(".result-panel").forEach((panel) => {
+          const active = panel.id === "panel-" + target;
+          panel.classList.toggle("active", active);
+          panel.hidden = !active;
+        });
+      });
+    });
+
+    btnTranscribe.addEventListener("click", async () => {
+      if (!selectedFile) return;
+
+      btnTranscribe.disabled = true;
+      results.classList.remove("visible");
+      setStatus("Transcrevendo… isso pode levar alguns minutos.", "loading");
+
+      const form = new FormData();
+      form.append("video", selectedFile);
+
+      try {
+        const res = await fetch("/api/transcribe", { method: "POST", body: form });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || res.statusText || "Erro na transcrição");
+
+        pureText.value = data.pure || "";
+        timedText.value = data.timestamped || "";
+        results.classList.add("visible");
+        setStatus("Transcrição concluída com sucesso.", "ok");
+      } catch (err) {
+        setStatus(err.message || "Falha ao transcrever.", "error");
+      } finally {
+        btnTranscribe.disabled = !selectedFile;
+      }
+    });
+
+    btnClear.addEventListener("click", () => {
+      selectedFile = null;
+      fileInput.value = "";
+      fileName.textContent = "";
+      fileName.classList.remove("visible");
+      pureText.value = "";
+      timedText.value = "";
+      results.classList.remove("visible");
+      btnTranscribe.disabled = true;
+      setStatus("");
+    });
+
+    document.querySelectorAll("[data-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-copy");
+        const el = document.getElementById(id);
+        const copiedId = id === "pureText" ? "copiedPure" : "copiedTimed";
+        try {
+          await navigator.clipboard.writeText(el.value);
+          const badge = document.getElementById(copiedId);
+          badge.classList.add("show");
+          setTimeout(() => badge.classList.remove("show"), 1500);
+        } catch {
+          el.select();
+          document.execCommand("copy");
+        }
+      });
+    });
+  </script>
+</body>
+</html>
