@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from transcriber import transcribe_file
 
 app = FastAPI(title="Transcrição de Vídeo")
-STATIC_DIR = Path(__file__).parent / "static"
+STATIC_DIR = Path(__file__).parent / "public"
 
 
 @app.get("/")

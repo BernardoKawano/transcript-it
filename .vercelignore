@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+.pytest_cache/
+tests/
+*.wav
+*.tmp
+ultimo_erro.log
+run.bat
+Iniciar.vbs

@@ -2,4 +2,5 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
 python-multipart>=0.0.12
 faster-whisper>=1.1.0
+imageio-ffmpeg>=0.5.0
 pytest>=8.0.0

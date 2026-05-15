@@ -29,8 +29,24 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 pytest
 ```
 
+## Deploy no Vercel
+
+O repositório está configurado para deploy automático via GitHub:
+
+1. Conecte o repo [transcript-it](https://github.com/BernardoKawano/transcript-it) no [Vercel Dashboard](https://vercel.com/new)
+2. Cada push na branch `main` gera um novo deploy
+3. URL de produção: https://transcript-it.vercel.app
+
+Variáveis de ambiente opcionais no Vercel:
+
+| Variável | Padrão | Descrição |
+|----------|--------|-----------|
+| `WHISPER_MODEL` | `base` | Tamanho do modelo (`tiny`, `base`, `small`) |
+| `WHISPER_DEVICE` | `cpu` | Dispositivo de inferência |
+| `WHISPER_COMPUTE` | `int8` | Tipo de computação |
+
 ## Estrutura
 
 - `main.py` — API FastAPI
 - `transcriber.py` — lógica de transcrição (faster-whisper)
-- `static/` — interface web
+- `public/` — interface web (servida pelo CDN no Vercel)

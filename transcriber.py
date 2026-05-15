@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -18,9 +19,24 @@ def get_model() -> WhisperModel:
     return _model
 
 
+def _resolve_ffmpeg() -> str:
+    found = shutil.which("ffmpeg")
+    if found:
+        return found
+    try:
+        import imageio_ffmpeg
+
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except ImportError:
+        pass
+    raise RuntimeError(
+        "ffmpeg não encontrado. Instale o FFmpeg no PATH ou use imageio-ffmpeg."
+    )
+
+
 def extract_audio(video_path: Path, audio_path: Path) -> None:
     cmd = [
-        "ffmpeg",
+        _resolve_ffmpeg(),
         "-y",
         "-i",
         str(video_path),
