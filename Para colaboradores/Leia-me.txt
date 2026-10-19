@@ -1,0 +1,13 @@
+﻿Como usar
+
+1. Se recebeu um .zip, extraia antes (botão direito > Extrair tudo, no Windows;
+   dois cliques no zip, no Mac).
+2. Dê dois cliques em "Abrir transcricao.html".
+3. O navegador abre. Arraste o áudio.
+
+Na primeira vez o navegador baixa o modelo (cerca de 80 MB), então precisa de internet.
+O áudio não sai do computador.
+
+Use Chrome, Edge ou Firefox atualizados.
+Se o arquivo abrir em outro programa, clique com o botão direito >
+Abrir com > Chrome (ou Edge).

@@ -54,6 +54,17 @@ if errorlevel 1 (
 :run
 echo Usando: %VENV_PY% >> "%LOG%"
 
+"%VENV_PY%" -c "import faster_whisper" >nul 2>&1
+if errorlevel 1 (
+  echo Instalando dependencias que faltam...
+  "%VENV_PY%" -m pip install -r requirements.txt >> "%LOG%" 2>&1
+  if errorlevel 1 (
+    echo Falha no pip install. Veja %LOG%
+    pause
+    exit /b 1
+  )
+)
+
 where ffmpeg >nul 2>&1
 if errorlevel 1 (
   echo AVISO: FFmpeg nao no PATH. Videos podem falhar. >> "%LOG%"
@@ -64,7 +75,7 @@ if errorlevel 1 (
 
 echo.
 echo ========================================
-echo   Transcricao de Video
+echo   Transcricao
 echo   http://127.0.0.1:8000
 echo ========================================
 echo.

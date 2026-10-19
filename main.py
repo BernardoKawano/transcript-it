@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from transcriber import transcribe_file
 
-app = FastAPI(title="Transcrição de Vídeo")
+app = FastAPI(title="Transcrição")
 STATIC_DIR = Path(__file__).parent / "public"
 
 
@@ -31,7 +31,7 @@ async def transcribe(video: UploadFile = File(...)):
             shutil.copyfileobj(video.file, tmp)
             tmp_path = Path(tmp.name)
 
-        result = transcribe_file(tmp_path)
+        result = transcribe_file(tmp_path, original_name=Path(video.filename).name)
         return result
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
@@ -44,4 +44,4 @@ async def transcribe(video: UploadFile = File(...)):
             tmp_path.unlink(missing_ok=True)
 
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR / "static"), name="static")
