@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Arraste um áudio e receba a transcrição em leitura e em arquivo para IA." />
+  <title>Transcrição</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232563eb'/%3E%3Cpath fill='%23fff' d='M10 11h12v2H10zm0 4h12v2H10zm0 4h8v2h-8z'/%3E%3C/svg%3E" />
+  <style>
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --muted: #94a3b8;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eff6ff;
+  --success: #059669;
+  --success-soft: #ecfdf5;
+  --error: #dc2626;
+  --error-soft: #fef2f2;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+}
+
+.header-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logo svg {
+  width: 20px;
+  height: 20px;
+}
+
+.header-text h1 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.header-text p {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-top: 0.1rem;
+}
+
+.main {
+  flex: 1;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.card-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.upload-zone {
+  display: block;
+  width: 100%;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 2.25rem 1.5rem;
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.upload-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.upload-zone.busy {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.upload-zone input {
+  display: none;
+}
+
+.upload-icon {
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 0.875rem;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.upload-zone:hover .upload-icon,
+.upload-zone.dragover .upload-icon {
+  color: var(--accent);
+}
+
+.upload-zone > p:first-of-type {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.upload-hint {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-top: 0.35rem;
+}
+
+.file-name {
+  margin-top: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  word-break: break-all;
+  display: none;
+}
+
+.file-name.visible {
+  display: block;
+  max-width: 100%;
+}
+
+.actions {
+  display: flex;
+  gap: 0.625rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.language-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: auto;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.language-field select {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 0.625rem 1.125rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.status-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  min-height: 2.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.status-bar:empty,
+.status-bar.hidden {
+  display: none;
+}
+
+.status-bar.loading {
+  background: var(--accent-soft);
+  border-color: #bfdbfe;
+  color: var(--accent);
+}
+
+.status-bar.ok {
+  background: var(--success-soft);
+  border-color: #a7f3d0;
+  color: var(--success);
+}
+
+.status-bar.error {
+  background: var(--error-soft);
+  border-color: #fecaca;
+  color: var(--error);
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #bfdbfe;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.results {
+  display: none;
+}
+
+.results.visible {
+  display: block;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.tab {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.result-panel {
+  display: none;
+}
+
+.result-panel.active {
+  display: block;
+}
+
+.result-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+
+.copied {
+  font-size: 0.75rem;
+  color: var(--success);
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.copied.show {
+  opacity: 1;
+}
+
+.btn-copy {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.meta-line {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: -0.35rem 0 1rem;
+}
+
+.format-note {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.segments {
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  max-height: 480px;
+  overflow: auto;
+}
+
+.segment {
+  display: grid;
+  grid-template-columns: 4.75rem 1fr;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.segment:last-child {
+  border-bottom: none;
+}
+
+.segment time {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent);
+  padding-top: 0.15rem;
+}
+
+.segment p {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.segment-empty {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.ai-file {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 480px;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.875rem 1rem;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.footer {
+  text-align: center;
+  padding: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.footer p + p {
+  margin-top: 0.75rem;
+}
+
+.share-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.share-row a {
+  color: var(--accent);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .card {
+    padding: 1.125rem;
+  }
+
+  .upload-zone {
+    padding: 1.75rem 1rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+
+  .segment {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+}
+
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v18M8 7v10M16 5v14M4 9v6M20 8v8"/>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1>Transcrição</h1>
+          <p>Arraste um áudio. A leitura e o arquivo para IA aparecem em seguida.</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="card" aria-labelledby="upload-title">
+        <h2 class="card-title" id="upload-title">Arquivo</h2>
+
+        <label class="upload-zone" id="dropZone">
+          <input type="file" id="fileInput" accept="audio/*,video/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.wma,.mp4,.mkv,.avi,.mov,.webm" />
+          <div class="upload-inner">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p id="dropLabel">Arraste o áudio aqui</p>
+            <p class="upload-hint">ou clique para escolher. MP3, WAV, M4A ou OGG. O áudio não sai deste computador.</p>
+            <span class="file-name" id="fileName"></span>
+          </div>
+        </label>
+
+        <div class="actions">
+          <label class="language-field">
+            <span>Idioma do áudio</span>
+            <select id="languageSelect">
+              <option value="pt" selected>Português</option>
+              <option value="en">Inglês</option>
+              <option value="es">Espanhol</option>
+            </select>
+          </label>
+          <button type="button" class="btn-secondary" id="btnClear">Limpar</button>
+        </div>
+      </section>
+
+      <div id="statusBar" class="status-bar hidden" role="status" aria-live="polite"></div>
+
+      <section class="card results" id="results" aria-labelledby="results-title">
+        <h2 class="card-title" id="results-title">Transcrição</h2>
+        <p class="meta-line" id="metaLine"></p>
+
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" role="tab" id="tab-readable" aria-selected="true" aria-controls="panel-readable" data-tab="readable">Leitura</button>
+          <button type="button" class="tab" role="tab" id="tab-ai" aria-selected="false" aria-controls="panel-ai" data-tab="ai">Arquivo para IA</button>
+        </div>
+
+        <div class="result-panel active" id="panel-readable" role="tabpanel" aria-labelledby="tab-readable">
+          <p class="format-note">Cada fala com o momento em que começa. Use para ler ou colar em um documento.</p>
+          <div class="result-toolbar">
+            <span class="copied" id="copiedReadable">Copiado</span>
+            <button type="button" class="btn-secondary btn-copy" id="btnCopyReadable">Copiar</button>
+            <button type="button" class="btn-secondary btn-copy" id="btnDownloadReadable">Baixar .txt</button>
+          </div>
+          <ol class="segments" id="segmentList"></ol>
+        </div>
+
+        <div class="result-panel" id="panel-ai" role="tabpanel" aria-labelledby="tab-ai" hidden>
+          <p class="format-note">Markdown com contexto, texto integral e linha do tempo. Envie este arquivo para o ChatGPT, Claude ou Cursor.</p>
+          <div class="result-toolbar">
+            <span class="copied" id="copiedAi">Copiado</span>
+            <button type="button" class="btn-secondary btn-copy" id="btnCopyAi">Copiar</button>
+            <button type="button" class="btn-secondary btn-copy" id="btnDownloadAi">Baixar .md</button>
+          </div>
+          <pre class="ai-file" id="aiFile"></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>O áudio fica neste computador. Na primeira vez o navegador baixa o modelo.</p>
+    </footer>
+  </div>
+
+  <script type="module">
+const LANGUAGE_NAMES = {
+  pt: "português",
+  en: "inglês",
+  es: "espanhol",
+  fr: "francês",
+  de: "alemão",
+  it: "italiano",
+  ja: "japonês",
+  ko: "coreano",
+  zh: "chinês",
+  ru: "russo",
+  ar: "árabe",
+  nl: "holandês",
+  pl: "polonês",
+  sv: "sueco",
+  tr: "turco",
+  hi: "hindi",
+  uk: "ucraniano",
+};
+
+const SHARE_URL = "https://transcript-it.vercel.app";
+
+function pad(value, size = 2) {
+  return String(value).padStart(size, "0");
+}
+
+function formatTime(seconds) {
+  const safe = Number(seconds) || 0;
+  const h = Math.floor(safe / 3600);
+  const m = Math.floor((safe % 3600) / 60);
+  const s = (safe % 60).toFixed(3).padStart(6, "0");
+  if (h > 0) return `${pad(h)}:${pad(m)}:${s}`;
+  return `${pad(m)}:${s}`;
+}
+
+function formatClock(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h) return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  return `${pad(m)}:${pad(s)}`;
+}
+
+function formatDurationLabel(seconds) {
+  const total = Math.max(0, Math.round(Number(seconds) || 0));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const parts = [];
+  if (h) parts.push(`${h} h`);
+  if (m) parts.push(`${m} min`);
+  if (s || !parts.length) parts.push(`${s} s`);
+  return parts.join(" ");
+}
+
+function languageLabel(code) {
+  if (!code) return "idioma não identificado";
+  return LANGUAGE_NAMES[code] || code;
+}
+
+function countLabel(n) {
+  return n === 1 ? "1 trecho" : `${n} trechos`;
+}
+
+function yamlQuote(value) {
+  const escaped = String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `"${escaped}"`;
+}
+
+function asRows(segments) {
+  const rows = [];
+  for (const seg of segments || []) {
+    const start = Array.isArray(seg) ? seg[0] : seg.start;
+    const end = Array.isArray(seg) ? seg[1] : seg.end;
+    const text = String(Array.isArray(seg) ? seg[2] : seg.text || "").trim();
+    if (!text) continue;
+    rows.push([Number(start) || 0, Number(end) || 0, text]);
+  }
+  return rows;
+}
+
+function isoLocal(date) {
+  const value = date instanceof Date ? date : new Date(date);
+  const tz = -value.getTimezoneOffset();
+  const sign = tz >= 0 ? "+" : "-";
+  const abs = Math.abs(tz);
+  return (
+    `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}` +
+    `T${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}` +
+    `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
+  );
+}
+
+function buildReadable(segments, { filename, language, duration }) {
+  const rows = asRows(segments);
+  const total = duration != null ? duration : rows.length ? rows[rows.length - 1][1] : 0;
+  const lines = [
+    filename,
+    `${formatDurationLabel(total)} · ${languageLabel(language)} · ${countLabel(rows.length)}`,
+    "",
+  ];
+  if (!rows.length) {
+    lines.push("Nenhuma fala detectada.", "");
+    return lines.join("\n");
+  }
+  for (const [start, , text] of rows) {
+    lines.push(formatClock(start), text, "");
+  }
+  return lines.join("\n");
+}
+
+function buildAiFile(segments, { filename, language, duration, generatedAt }) {
+  const rows = asRows(segments);
+  const total = duration != null ? duration : rows.length ? rows[rows.length - 1][1] : 0;
+  const stamp = typeof generatedAt === "string" ? generatedAt : isoLocal(generatedAt || new Date());
+  const lines = [
+    "---",
+    "tipo: transcricao",
+    `origem: ${yamlQuote(filename)}`,
+    `idioma: ${language || "desconhecido"}`,
+    `duracao_segundos: ${Number(total).toFixed(3)}`,
+    `segmentos: ${rows.length}`,
+    `gerado_em: ${stamp}`,
+    "---",
+    "",
+    "# Transcrição para IA",
+    "",
+    "Este arquivo é a transcrição integral de um áudio.",
+    "Use apenas o que está escrito abaixo.",
+    "Se uma informação não aparecer na transcrição, diga que ela não consta.",
+    "Não invente falas, nomes, decisões ou números.",
+    "",
+    "## Contexto",
+    "",
+    `- Arquivo: ${filename}`,
+    `- Duração: ${formatDurationLabel(total)}`,
+    `- Idioma: ${languageLabel(language)}`,
+    `- Trechos: ${rows.length}`,
+    "",
+    "## Texto",
+    "",
+  ];
+  if (rows.length) lines.push(...rows.map((row) => row[2]));
+  else lines.push("Nenhuma fala detectada.");
+  lines.push("", "## Linha do tempo", "");
+  if (rows.length) {
+    for (const [start, end, text] of rows) {
+      lines.push(`- [${formatTime(start)}–${formatTime(end)}] (${(end - start).toFixed(2)}s) ${text}`);
+    }
+  } else {
+    lines.push("- Nenhuma fala detectada.");
+  }
+  lines.push("");
+  return lines.join("\n");
+}
+
+function buildTranscript(segments, options) {
+  const rows = asRows(segments);
+  const total = options.duration != null ? options.duration : rows.length ? rows[rows.length - 1][1] : 0;
+  const settings = { ...options, duration: total };
+  return {
+    readable: buildReadable(rows, settings),
+    ai_file: buildAiFile(rows, settings),
+    segments: rows.map(([start, end, text]) => ({
+      start: Math.round(start * 1000) / 1000,
+      end: Math.round(end * 1000) / 1000,
+      label: formatClock(start),
+      text,
+    })),
+    meta: {
+      filename: options.filename,
+      language: options.language || null,
+      language_label: languageLabel(options.language),
+      duration: Math.round(total * 1000) / 1000,
+      duration_label: formatDurationLabel(total),
+      segment_count: rows.length,
+    },
+  };
+}
+
+
+const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
+// Sem idioma fixo, o Whisper no navegador para após a primeira frase.
+const WHISPER_LANGUAGES = { pt: "portuguese", en: "english", es: "spanish" };
+
+const fileInput = document.getElementById("fileInput");
+const dropZone = document.getElementById("dropZone");
+const dropLabel = document.getElementById("dropLabel");
+const fileName = document.getElementById("fileName");
+const btnClear = document.getElementById("btnClear");
+const statusBar = document.getElementById("statusBar");
+const results = document.getElementById("results");
+const metaLine = document.getElementById("metaLine");
+const segmentList = document.getElementById("segmentList");
+const aiFile = document.getElementById("aiFile");
+const languageSelect = document.getElementById("languageSelect");
+
+let current = null;
+let runId = 0;
+let modelPromise = null;
+
+function setStatus(msg, type = "") {
+  if (!msg) {
+    statusBar.textContent = "";
+    statusBar.className = "status-bar hidden";
+    return;
+  }
+  statusBar.className = "status-bar " + type;
+  if (type === "loading") {
+    statusBar.innerHTML = '<span class="spinner" aria-hidden="true"></span><span>' + escapeHtml(msg) + "</span>";
+  } else {
+    statusBar.textContent = msg;
+  }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function stemOf(name) {
+  const base = String(name || "transcricao").replace(/\.[^.]+$/, "") || "transcricao";
+  return base.replace(/[\\/:*?"<>|]/g, "-").trim() || "transcricao";
+}
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes < 0) return "";
+  if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function showCopied(id) {
+  const badge = document.getElementById(id);
+  badge.classList.add("show");
+  setTimeout(() => badge.classList.remove("show"), 1500);
+}
+
+async function copyText(text, badgeId) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const area = document.createElement("textarea");
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand("copy");
+    area.remove();
+  }
+  showCopied(badgeId);
+}
+
+function downloadText(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function renderTranscript(data) {
+  current = data;
+  const meta = data.meta || {};
+  const count = meta.segment_count ?? (data.segments || []).length;
+  const countText = count === 1 ? "1 trecho" : count + " trechos";
+  metaLine.textContent = [meta.filename, meta.duration_label, meta.language_label, countText]
+    .filter(Boolean)
+    .join(" · ");
+
+  segmentList.replaceChildren();
+  const segments = data.segments || [];
+  if (!segments.length) {
+    const empty = document.createElement("li");
+    empty.className = "segment segment-empty";
+    empty.textContent = "Nenhuma fala detectada.";
+    segmentList.appendChild(empty);
+  } else {
+    for (const seg of segments) {
+      const item = document.createElement("li");
+      item.className = "segment";
+      const time = document.createElement("time");
+      time.textContent = seg.label || "";
+      const text = document.createElement("p");
+      text.textContent = seg.text || "";
+      item.append(time, text);
+      segmentList.appendChild(item);
+    }
+  }
+
+  aiFile.textContent = data.ai_file || "";
+  results.classList.add("visible");
+  results.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// Aberto direto do disco (file://), alguns navegadores bloqueiam o Cache Storage.
+async function browserCacheWorks() {
+  try {
+    await caches.open("transformers-cache");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function createModel(onProgress) {
+  let transformers;
+  try {
+    transformers = await import(TRANSFORMERS_URL);
+  } catch {
+    throw new Error("Sem conexão para baixar o transcritor. Verifique a internet e tente de novo.");
+  }
+  const { pipeline, env } = transformers;
+  env.allowLocalModels = false;
+  env.useBrowserCache = await browserCacheWorks();
+  try {
+    return await pipeline("automatic-speech-recognition", "Xenova/whisper-base", {
+      progress_callback: onProgress,
+    });
+  } catch (err) {
+    if (err instanceof TypeError) {
+      throw new Error("Não foi possível baixar o modelo. Verifique a internet e tente de novo.");
+    }
+    throw err;
+  }
+}
+
+function loadModel(onProgress) {
+  if (!modelPromise) {
+    modelPromise = createModel(onProgress).catch((err) => {
+      modelPromise = null;
+      throw err;
+    });
+  }
+  return modelPromise;
+}
+
+async function decodeTo16k(file) {
+  // Decodifica direto em 16 kHz: um áudio de 1 h ocupa ~230 MB em vez de ~1,4 GB.
+  const audioCtx = new AudioContext({ sampleRate: 16000 });
+  try {
+    const decoded = await audioCtx.decodeAudioData(await file.arrayBuffer());
+    const channels = decoded.numberOfChannels;
+    let samples = decoded.getChannelData(0);
+    if (channels > 1) {
+      const mono = new Float32Array(decoded.length);
+      for (let c = 0; c < channels; c++) {
+        const data = decoded.getChannelData(c);
+        for (let i = 0; i < data.length; i++) mono[i] += data[i] / channels;
+      }
+      samples = mono;
+    }
+    return { samples, duration: decoded.duration };
+  } finally {
+    await audioCtx.close();
+  }
+}
+
+function chunksToRows(output, duration) {
+  const chunks = output && output.chunks;
+  if (!chunks || !chunks.length) {
+    const text = String((output && output.text) || "").trim();
+    return text ? [[0, duration || 0, text]] : [];
+  }
+  const rows = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const text = String(chunk.text || "").trim();
+    if (!text) continue;
+    const stamp = chunk.timestamp || [0, null];
+    const start = Number(stamp[0]) || 0;
+    let end = stamp[1] == null ? null : Number(stamp[1]);
+    if (end == null) {
+      const next = chunks[i + 1] && chunks[i + 1].timestamp;
+      end = next && next[0] != null ? Number(next[0]) : duration || start;
+    }
+    rows.push([start, end, text]);
+  }
+  return rows;
+}
+
+async function transcribe(file) {
+  if (!file) return;
+  const id = ++runId;
+  current = null;
+  fileName.textContent = file.name;
+  fileName.classList.add("visible");
+  results.classList.remove("visible");
+  dropZone.classList.add("busy");
+
+  const size = formatBytes(file.size);
+  const label = size ? file.name + " (" + size + ")" : file.name;
+  setStatus("Preparando " + label + "…", "loading");
+
+  try {
+    const { samples, duration } = await decodeTo16k(file);
+    if (id !== runId) return;
+
+    const model = await loadModel((data) => {
+      if (id !== runId) return;
+      if (data && data.status === "progress") {
+        const pct = data.progress == null ? "" : " " + Math.round(data.progress) + "%";
+        setStatus("Baixando o modelo" + pct + "… só na primeira vez, cerca de 80 MB.", "loading");
+      }
+    });
+    if (id !== runId) return;
+
+    setStatus("Transcrevendo " + label + " neste computador…", "loading");
+    const language = WHISPER_LANGUAGES[languageSelect.value] ? languageSelect.value : "pt";
+    const output = await model(samples, {
+      return_timestamps: true,
+      task: "transcribe",
+      language: WHISPER_LANGUAGES[language],
+      chunk_length_s: 30,
+      stride_length_s: 5,
+    });
+    if (id !== runId) return;
+
+    renderTranscript(buildTranscript(chunksToRows(output, duration), {
+      filename: file.name,
+      language,
+      duration,
+      generatedAt: new Date(),
+    }));
+    setStatus("Transcrição pronta. Escolha Leitura ou Arquivo para IA.", "ok");
+  } catch (err) {
+    if (id !== runId) return;
+    const message = err && err.name === "EncodingError"
+      ? "O navegador não conseguiu ler esse arquivo. Use MP3, WAV, M4A ou OGG."
+      : (err && err.message) || "Falha ao transcrever.";
+    setStatus(message, "error");
+  } finally {
+    if (id === runId) dropZone.classList.remove("busy");
+  }
+}
+
+fileInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  fileInput.value = "";
+  if (file) transcribe(file);
+});
+
+dropZone.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  dropZone.classList.add("dragover");
+  dropLabel.textContent = "Solte para transcrever";
+});
+dropZone.addEventListener("dragleave", () => {
+  dropZone.classList.remove("dragover");
+  dropLabel.textContent = "Arraste o áudio aqui";
+});
+dropZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.classList.remove("dragover");
+  dropLabel.textContent = "Arraste o áudio aqui";
+  const file = e.dataTransfer.files[0];
+  if (file) transcribe(file);
+});
+
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer && e.dataTransfer.files[0];
+  if (file) transcribe(file);
+});
+
+document.querySelectorAll(".tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const target = tab.dataset.tab;
+    document.querySelectorAll(".tab").forEach((t) => {
+      const active = t.dataset.tab === target;
+      t.classList.toggle("active", active);
+      t.setAttribute("aria-selected", active);
+    });
+    document.querySelectorAll(".result-panel").forEach((panel) => {
+      const active = panel.id === "panel-" + target;
+      panel.classList.toggle("active", active);
+      panel.hidden = !active;
+    });
+  });
+});
+
+btnClear.addEventListener("click", () => {
+  runId += 1;
+  current = null;
+  fileInput.value = "";
+  fileName.textContent = "";
+  fileName.classList.remove("visible");
+  segmentList.replaceChildren();
+  aiFile.textContent = "";
+  metaLine.textContent = "";
+  results.classList.remove("visible");
+  dropZone.classList.remove("busy");
+  setStatus("");
+});
+
+document.getElementById("btnCopyReadable").addEventListener("click", () => {
+  if (!current) return;
+  copyText(current.readable || "", "copiedReadable");
+});
+
+document.getElementById("btnCopyAi").addEventListener("click", () => {
+  if (!current) return;
+  copyText(current.ai_file || "", "copiedAi");
+});
+
+document.getElementById("btnDownloadReadable").addEventListener("click", () => {
+  if (!current) return;
+  const name = stemOf(current.meta && current.meta.filename) + "-leitura.txt";
+  downloadText(name, current.readable || "", "text/plain;charset=utf-8");
+});
+
+document.getElementById("btnDownloadAi").addEventListener("click", () => {
+  if (!current) return;
+  const name = stemOf(current.meta && current.meta.filename) + "-para-ia.md";
+  downloadText(name, current.ai_file || "", "text/markdown;charset=utf-8");
+});
+
+</script>
+</body>
+</html>
